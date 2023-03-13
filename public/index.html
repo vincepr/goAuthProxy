@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        label {
+            display: block;
+            font: 0.9rem 'Fira Sans', sans-serif;
+        }
+        input[type='submit'],
+        label {
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Login:</h1>
+    <div id="app" class="app">
+        <div>
+            <label for="username">Username:</label>
+            <input id="username" type="text" id="username" name="username">
+        </div>
+        
+        <div>
+            <label for="pass">Password (8 chars minimum):</label>
+            <input id="password" type="password" id="pass" name="password" autofocus>
+        </div>
+        
+        <input id="submit" type="submit" value="Sign in">
+    </div>
+    <script defer type="text/javascript" src="./main.js"></script> 
+</body>
+</html>
