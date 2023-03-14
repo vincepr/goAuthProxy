@@ -2,58 +2,29 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strings"
 	"time"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
 /*
 * SETUP - initializing defaults and checking urls
  */
-var (
-	port 		= flag.String("port", "3002", "the port this proxy should listen for requets from")
-	username 	= flag.String("user", "username", "the address and port of the server we proxy to")
-	password 	= flag.String("pw", "qwert123", "the address and port of the server we proxy to")
-	urlProxy 	= flag.String("url", "http://127.0.0.1:3001", "the address and port of the server we proxy to")	
-)
-const cookieToken string  = "123asdfasdoi123"		// :todo remove after jwt
 
 
-func getEnvValues() {
-	// initialise necessary values
-	flag.Parse()
-	if *username =="username" 	{fmt.Println("using default username: ", *username,"change with -user")}
-	if *password=="qwert123" 	{fmt.Println("using default password:", *password,"change with -pw")}
-	
-	// hash our password
-	encPw, err := bcrypt.GenerateFromPassword([]byte(*password), bcrypt.DefaultCost)
-	if err != nil{
-		panic(err)
-	}
-	*password = string(encPw)
 
-	//format url if without http://
-	formatUrl := func(str *string){
-		if !strings.HasPrefix(*str, "http://") && !strings.HasPrefix(*str, "https://"){
-			*str = "http://" + *str
-			log.Println("adding http:// str the URL -str:", *str)
-		}
-	}
-	formatUrl(urlProxy)
-	fmt.Println("Server running on port: :", *port)
-	fmt.Println("Redirecting to:", *urlProxy)
-}
+
 
 
 func main(){
-	// load our setup, :todo repalce this with env-values
-	getEnvValues()
+	// initialize and check our values we run the proxy with
+	InitGlobalValues()
+	InitAccounts()
 
 	// multiplex our routes:
 	mux := http.NewServeMux()
@@ -62,7 +33,7 @@ func main(){
 	mux.HandleFunc("/api", handleLoginRequest)
 	mux.HandleFunc("/logout", handleLogoutRequest)
 
-	err := http.ListenAndServe(":"+*port, mux)
+	err := http.ListenAndServe(":"+port, mux)
 	if err != nil{
 		panic(err)
 	}
@@ -83,26 +54,27 @@ func handleLoginRequest(rw http.ResponseWriter, req *http.Request){
 		rw.WriteHeader(http.StatusBadRequest)
 		rw.Write([]byte("400 - Bad Request"))
 	}
-
 	if req.Method != "POST"{
-		writeBadRequest(); return
-	} 
-
+		writeBadRequest(); return	// not allowed method
+	}
 	var request LoginRequest
 	if err := json.NewDecoder(req.Body).Decode(&request); err != nil{
-		writeBadRequest(); return
+		writeBadRequest(); return	// no json body
 	}
-	if request.Name!= *username{
-		writeBadRequest(); return
+	findUser, err := storage.GetAccountByName(request.Name)
+	if err != nil{
+		fmt.Println("user not found")
+		writeBadRequest(); return	// user not found
 	}
-	// check request-password against our hash
-	err := bcrypt.CompareHashAndPassword([]byte(*password), []byte(request.Password))
+	err = bcrypt.CompareHashAndPassword(findUser.PasswordHash, []byte(request.Password))
 	if err != nil {
-		writeBadRequest(); return
+		fmt.Println("bad pw")
+		writeBadRequest(); return	// request-passord doesnt match stored hash
 	}
 	// valid login -> grant our cookie -> then redirect to basepath if site
 	log.Println("login sucess - cookie granted")
-	addCookie(rw, "LoginToken", cookieToken, 2*time.Minute)
+	token, err := CreateJWTToken(findUser.Name, findUser.IsAdmin, secret)
+	addCookie(rw, "LoginToken", token, 2*time.Minute)
 	http.Redirect(rw, req, "/", http.StatusSeeOther)
 }
 
@@ -135,20 +107,34 @@ func handleLogoutRequest(rw http.ResponseWriter, req *http.Request){
 
 // redirect requests to the appropriate url vs proxy
 func handleRequestAndRedirect(rw http.ResponseWriter, req *http.Request) {
+	// :todo maybe rewrite this ugly auth block as middleware without nested ifs, to seperate concerns better. But then again its running all the same.
 	validToken := false
 	cookie, err := req.Cookie("LoginToken")
 	if err != nil {
 		validToken = false
-	} else if cookie.Value==cookieToken{
-		validToken = true
+	}else{
+		// parse claims out of cookie
+		claims, err := ValidateJWTClaims(cookie.Value, secret)					
+		if (err != nil) {
+			validToken = false
+		} else{
+			// check if user exists :todo
+			name, err := storage.GetAccountByName(claims.Name)
+			if err != nil{
+				validToken = false
+			}else if claims.Name == name.Name{
+				validToken = true
+			}
+		}
 	}
+	
 
 	if !validToken {
 		// not logged-in so we redirect to login page
 		http.Redirect(rw, req, "/login", http.StatusSeeOther)
 	} else {
 		// logged-in so we proxy forward to our proxy server
-		url := *urlProxy
+		url := urlProxy
 		log.Println("we serve proxy to:",url)
 
 		serveReverseProxy(url, rw, req)
@@ -168,10 +154,10 @@ func serveReverseProxy(to string, rw http.ResponseWriter, req *http.Request){
 	proxy := httputil.NewSingleHostReverseProxy(url)
 
 	// update headers to allow for ssl redirection
-	//req.URL.Host = url.Host
-	//req.URL.Scheme = url.Scheme
-	//req.Header.Set("X-Forwarded-Host", req.Header.Get("Host"))
-	//req.Host = url.Host
+	req.URL.Host = url.Host
+	req.URL.Scheme = url.Scheme
+	req.Header.Set("X-Forwarded-Host", req.Header.Get("Host"))
+	req.Host = url.Host
 
 	proxy.ServeHTTP(rw, req)
 }
