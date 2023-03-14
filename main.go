@@ -170,7 +170,7 @@ func serveReverseProxy(to string, rw http.ResponseWriter, req *http.Request){
 	// update headers to allow for ssl redirection
 	//req.URL.Host = url.Host
 	//req.URL.Scheme = url.Scheme
-	req.Header.Set("X-Forwarded-Host", req.Header.Get("Host"))
+	//req.Header.Set("X-Forwarded-Host", req.Header.Get("Host"))
 	//req.Host = url.Host
 
 	proxy.ServeHTTP(rw, req)
