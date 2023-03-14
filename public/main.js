@@ -5,12 +5,16 @@ function App(){
     let $name = document.querySelector("#username")
     let $password = document.querySelector("#password")
     let $submit = document.querySelector("#submit")
+    let $form = document.querySelector("#form")
     $submit.addEventListener("click", handleSubmit)
 
-    function handleSubmit(){
+    $form.addEventListener("submit", handleSubmit)
+
+    function handleSubmit(event){
         let name = $name.value
         let pass = $password.value
         loginRequest(name, pass)
+        event.preventDefault();
     }
 }
 

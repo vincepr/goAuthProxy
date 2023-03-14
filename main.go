@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -15,10 +13,6 @@ import (
 /*
 * SETUP - initializing defaults and checking urls
  */
-
-
-
-
 
 
 func main(){
@@ -49,30 +43,43 @@ type LoginRequest struct{
 	Password	string `json:"password"`
 }
 
+// rewrite this so it blocks for ALL THREADS AND NOT JUST THE ONE (port?) its on. :todo
+func failedLoginAttempt(){
+	failedLoginAttempts ++
+	if failedLoginAttempts > 3{
+		time.Sleep(10*time.Second)
+		failedLoginAttempts=0
+	}
+}
+
 func handleLoginRequest(rw http.ResponseWriter, req *http.Request){
 	writeBadRequest := func(){
 		rw.WriteHeader(http.StatusBadRequest)
 		rw.Write([]byte("400 - Bad Request"))
 	}
 	if req.Method != "POST"{
-		writeBadRequest(); return	// not allowed method
+		writeBadRequest(); 
+		return	// not allowed method
 	}
 	var request LoginRequest
 	if err := json.NewDecoder(req.Body).Decode(&request); err != nil{
-		writeBadRequest(); return	// no json body
+		writeBadRequest(); 
+		return	// no json body
 	}
 	findUser, err := storage.GetAccountByName(request.Name)
 	if err != nil{
-		fmt.Println("user not found")
-		writeBadRequest(); return	// user not found
+		failedLoginAttempt()
+		writeBadRequest(); 
+		return	// user not found
 	}
 	err = bcrypt.CompareHashAndPassword(findUser.PasswordHash, []byte(request.Password))
 	if err != nil {
-		fmt.Println("bad pw")
-		writeBadRequest(); return	// request-passord doesnt match stored hash
+		failedLoginAttempt()
+		writeBadRequest(); 
+		return	// request-passord doesnt match stored hash
 	}
 	// valid login -> grant our cookie -> then redirect to basepath if site
-	log.Println("login sucess - cookie granted")
+	failedLoginAttempts = 0
 	token, err := CreateJWTToken(findUser.Name, findUser.IsAdmin, secret)
 	addCookie(rw, "LoginToken", token, 2*time.Minute)
 	http.Redirect(rw, req, "/", http.StatusSeeOther)
@@ -96,13 +103,12 @@ func handleLogoutRequest(rw http.ResponseWriter, req *http.Request){
 		Name: "LoginToken",
 		Expires: time.Now().Add(-time.Hour),
 	})
-	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte("Logout Sucessful"))
+	http.Redirect(rw, req, "/login/", http.StatusSeeOther)
 }
 
 
 /*
-*	redirect logic depending if were logged in or not
+*	redirect logic depending if were LOGGED-IN or NOT
 */
 
 // redirect requests to the appropriate url vs proxy
@@ -118,7 +124,7 @@ func handleRequestAndRedirect(rw http.ResponseWriter, req *http.Request) {
 		if (err != nil) {
 			validToken = false
 		} else{
-			// check if user exists :todo
+			// check if user exists
 			name, err := storage.GetAccountByName(claims.Name)
 			if err != nil{
 				validToken = false
@@ -135,8 +141,6 @@ func handleRequestAndRedirect(rw http.ResponseWriter, req *http.Request) {
 	} else {
 		// logged-in so we proxy forward to our proxy server
 		url := urlProxy
-		log.Println("we serve proxy to:",url)
-
 		serveReverseProxy(url, rw, req)
 	}
 }

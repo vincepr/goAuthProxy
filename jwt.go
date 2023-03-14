@@ -8,19 +8,12 @@ import (
 )
 
 
-
-
-
 /*
-* 	JSON Web Token to 
+* 	JSON Web Token to secure our users identity and use it for authorisation
 *
-* - https://jwt.io/introduction
-* jwt package from go get -u github.com/golang-jwt/jwt/v5
+* - https://jwt.io/introduction 			- overview over json web token
+* - package from github.com/golang-jwt/jwt	- golang package for jsw
 */
-
-
-
-
 
 
 // Claims from a Token, stores who the user is, what he can access and or and for how long 

@@ -17,6 +17,7 @@ var (
 	secret		= "default-2_#123default-2_#123"
 	password	[]byte 
 	storage 	= NewAccountStorage()
+	failedLoginAttempts = 0
 )
 
 func InitGlobalValues(){
@@ -54,7 +55,7 @@ func InitGlobalValues(){
 	case *fSecret != "": 	secret = *fSecret
 	case *fPwHash != "": 	pwHash = *fPwHash
 	}
-	fmt.Println(*fPwHash)
+
 	// warnings using with defautl values:
 	if username=="username" {fmt.Println("!- using default username: ", username,"change with -user, or set using GRP_USER env")}
 	if secret=="default-2_#123" 	{fmt.Println("!- using default secret:", secret,"change with -secret, or set using GRP_SECRET env")}
@@ -74,7 +75,7 @@ func InitGlobalValues(){
 		panic(err)
 	}
 	password= encPw
-	fmt.Printf("!- Better use -pwhash  or set the env GRP_PASSWORD_HASH directly: \n %v \n", string(encPw))
+	fmt.Printf("!- Better use -pwhash  or set the env GRP_PASSWORD_HASH directly, enclose in '' in terminal: \n %v \n", string(encPw))
 }
 
 
@@ -98,11 +99,3 @@ func InitAccounts() {
 	fmt.Println("Server running on port: :", port)
 	fmt.Println("Redirecting to:", urlProxy)
 }
-
-// func test(){
-// 	err := bcrypt.CompareHashAndPassword(password, []byte(request.Password))
-// 	if err != nil {
-// 		fmt.Println("bad pw")
-// 		writeBadRequest(); return	// request-passord doesnt match stored hash
-// 	}
-// }
