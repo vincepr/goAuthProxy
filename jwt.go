@@ -23,12 +23,12 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewJWTClaims(name string, isAdmin  bool) JWTClaims{
+func NewJWTClaims(name string, isAdmin  bool, duration time.Duration) JWTClaims{
 	return JWTClaims{
 		Name: name,
 		IsAdmin: isAdmin,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(18 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Issuer:    "go-reverse-proxy",
@@ -37,9 +37,9 @@ func NewJWTClaims(name string, isAdmin  bool) JWTClaims{
 }
 
 // creates a Token to pass to our Users after ex. Login
-func CreateJWTToken(name string, isAdmin bool, secret string) (string, error){
+func CreateJWTToken(name string, isAdmin bool, secret string, duration time.Duration) (string, error){
 	mySigningKey := []byte(secret)
-	claims := NewJWTClaims(name, isAdmin)
+	claims := NewJWTClaims(name, isAdmin, duration)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(mySigningKey)
 }

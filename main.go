@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -43,16 +44,19 @@ type LoginRequest struct{
 	Password	string `json:"password"`
 }
 
-// rewrite this so it blocks for ALL THREADS AND NOT JUST THE ONE (port?) its on. :todo
-func failedLoginAttempt(){
-	failedLoginAttempts ++
-	if failedLoginAttempts > 3{
+// rewrite this so it blocks for ALL THREADS AND NOT JUST THE ONE (port?) its on. :todo (might have race conditions like this)
+func checkLoginAttempts(){
+	//var1 := atomic.LoadInt32(&failedLoginAttempts)
+	atomic.AddInt32(&failedLoginAttempts , 1)
+	if atomic.LoadInt32(&failedLoginAttempts) > 4{
 		time.Sleep(10*time.Second)
 		failedLoginAttempts=0
+		atomic.StoreInt32(&failedLoginAttempts, 0)
 	}
 }
 
 func handleLoginRequest(rw http.ResponseWriter, req *http.Request){
+	checkLoginAttempts()
 	writeBadRequest := func(){
 		rw.WriteHeader(http.StatusBadRequest)
 		rw.Write([]byte("400 - Bad Request"))
@@ -68,20 +72,18 @@ func handleLoginRequest(rw http.ResponseWriter, req *http.Request){
 	}
 	findUser, err := storage.GetAccountByName(request.Name)
 	if err != nil{
-		failedLoginAttempt()
 		writeBadRequest(); 
 		return	// user not found
 	}
 	err = bcrypt.CompareHashAndPassword(findUser.PasswordHash, []byte(request.Password))
 	if err != nil {
-		failedLoginAttempt()
 		writeBadRequest(); 
 		return	// request-passord doesnt match stored hash
 	}
 	// valid login -> grant our cookie -> then redirect to basepath if site
-	failedLoginAttempts = 0
-	token, err := CreateJWTToken(findUser.Name, findUser.IsAdmin, secret)
-	addCookie(rw, "LoginToken", token, 2*time.Minute)
+	atomic.StoreInt32(&failedLoginAttempts, 0)
+	token, err := CreateJWTToken(findUser.Name, findUser.IsAdmin, secret, sessionTime)
+	addCookie(rw, "LoginToken", token, sessionTime)
 	http.Redirect(rw, req, "/", http.StatusSeeOther)
 }
 
@@ -162,6 +164,7 @@ func serveReverseProxy(to string, rw http.ResponseWriter, req *http.Request){
 	req.URL.Scheme = url.Scheme
 	req.Header.Set("X-Forwarded-Host", req.Header.Get("Host"))
 	req.Host = url.Host
+	
 
 	proxy.ServeHTTP(rw, req)
 }

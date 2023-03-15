@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-// globals with its default values
+// globals and default values
 var (
 	port 		= "3002"
 	urlProxy 	= "http://127.0.0.1:3001"
@@ -17,7 +18,9 @@ var (
 	secret		= "default-2_#123default-2_#123"
 	password	[]byte 
 	storage 	= NewAccountStorage()
-	failedLoginAttempts = 0
+
+	failedLoginAttempts int32 = 0
+	sessionTime	= time.Hour*8
 )
 
 func InitGlobalValues(){
