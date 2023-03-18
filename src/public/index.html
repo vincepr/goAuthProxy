@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        html, body {
+            height:100%;
+            display:grid;
+            place-items: center;
+        }
+        label {
+            font: .9rem 'Fira Sans', sans-serif;
+            display: block;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <form id="form" onsubmit="return false">
+        <h1>Login:</h1>
+            <div>
+                <label for="username">Username:</label>
+                <input id="username" value="username" type="text" id="username" name="username" autocomplete="username" spellcheck="false">
+            </div>
+            <div>
+                <label for="pass">Password (8 chars minimum):</label>
+                <input id="password" type="password" id="pass" name="password" autocomplete="current-password" autofocus>
+            </div>
+            <button id="submit"  value="Sign in">Submit</button>
+        </form>
+    <script defer type="text/javascript" src="./main.js"></script> 
+</body>
+</html>
