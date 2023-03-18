@@ -6,12 +6,12 @@
 ## Setup using just a binary
 lets assume we want to build our own binary for our current system (assuming we have the go-compiler):
 - clone the github repository and cd into the src folder
-- `go build -o ./goAuthProxy .` to create a binary for your current system
 - `mkdir -p /var/www/goAuthProxy` and `cp -r ./public/. /var/www/goAuthProxy` Create a folder, then copy our login-page to there
-- now we can test run our binary `./goAuthProxy --files /var/www/goAuthProxy/ -pw testpassword` 
+- `go build -o ./goAuthProxy .` to create a binary for your current system
+- now we can test run our binary `./goAuthProxy --files /var/www/goAuthProxy/ -pw test50password` 
 
 ### Creating a systemd autostart (for ubuntu or other systemd based systems)
-- `cp ./goAuthProxy /usr/bin/goAuthProxy` place our binary from the previous step into 
+- `cp ./goAuthProxy /usr/bin/goAuthProxy` place our binary from the previous step
 - `sudo nano /usr/lib/systemd/system/goAuthProxy.service` create the following file for our systemd service:
 ```
 [Unit]
@@ -20,17 +20,20 @@ After=nginx.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/goAuthProxy --url 127.0.0.1:3001
+Environment=GRP_SECRET='my-32-character-ultra-secure-and-ultra-long-secret'
+ExecStart=/usr/bin/goAuthProxy --pwhash '$$2a$$10$$phK/STbCWKZkpIIFyMMo8OQT56MEObJiGqRqqpR7noItLjogsLNsu'
 Restart=always
 User=vinceprNotRoot
 
 [Install]
 WantedBy=multi-user.target
 ```
-- `sudo systemctl enable code-server` to enable our service
-- `sudo systemctl start code-server` to start it
+**Important note:**   since this is essentially bash $ signs will have to be replaced by $$ for our pwhash to work in here. we could also use any of the 3 '`" by escaping it with \' if needed
+- `sudo systemctl enable goAuthProxy` to enable our service
+- `sudo systemctl start goAuthProxy` to start it
 - `sudo systemctl daemon-reload` reload all systemd config, to make it active before a restart
 
+sudo systemctl enable goAuthProxy && sudo systemctl start goAuthProxy && sudo systemctl daemon-reload
 ### List of all flags available:
 ```
 -files 

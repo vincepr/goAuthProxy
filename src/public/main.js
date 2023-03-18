@@ -1,7 +1,6 @@
 App()
 
 function App(){
-    console.log("js running")
     let $name = document.querySelector("#username")
     let $password = document.querySelector("#password")
     let $form = document.querySelector("#form")
