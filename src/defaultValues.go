@@ -12,13 +12,16 @@ import (
 
 // globals and default values
 var (
+	// variables changeable by user
 	port 		= "3002"
 	urlProxy 	= "http://127.0.0.1:3001"
 	username 	= "username"
+	password []byte 
+	filePath 	= "/var/www/goAuthProxy"
 	secret		= "default-2_#123default-2_#123"
-	password	[]byte 
+	
+	// variable not set by user:
 	storage 	= NewAccountStorage()
-
 	failedLoginAttempts int32 = 0
 	sessionTime	= time.Hour*8
 )
@@ -33,31 +36,61 @@ func InitGlobalValues(){
 	rUser 	:= os.Getenv("GRP_USER")
 	rPwHash := os.Getenv("GRP_PASSWORD_HASH")
 	rSecret := os.Getenv("GRP_SECRET")
+	rPath 	:= os.Getenv("GRP_FILEPATH")
 
-	switch{
-	case rPort !="": port = rPort
-	case rUrl !="": urlProxy = rUrl
-	case rUser !="": username = rUser
-	case rPwHash !="": pwHash = rPwHash
-	case rSecret !="": secret = rSecret
-	}
+
+	if rPort !=""{
+		port = rPort
+	} 	
+	if rUrl !=""{
+		urlProxy  = rUrl
+	} 	
+	if rUser !=""{
+		username = rUser
+	} 	
+	if rPwHash !=""{
+		pwHash = rPwHash
+	} 	
+	if rSecret !=""{
+		secret = rSecret
+	} 	
+	if rPath !=""{
+		filePath = rPath
+	} 	
+	
 	
 	// read files from flags, if they exist, take prio over env-variables
 	fPort 	:= flag.String("port", "", "the port this proxy should listen for requets from")
-	fUrl 	:= flag.String("url", "", "the address and port of the server we proxy to")	
-	fUser 	:= flag.String("user", "", "the address and port of the server we proxy to")
+	fUrl 	:= flag.String("url", "", "the address (and port) of the server we proxy to")	
+	fUser 	:= flag.String("user", "", "username of the user we login with")
 	fPw 	:= flag.String("pw", "", "plaintext password")
-	fSecret	:= flag.String("secret", "", "the secret used to encrypt the JSW-Tokens")
+	fSecret	:= flag.String("secret", "", "the secret used to encrypt the JWT-Tokens")
 	fPwHash	:= flag.String("pwhash", "", "hashed pw")
+	fPath 	:= flag.String("files", "", "absolute path to html/js files, ex /var/www/goAuthProxy")
 	flag.Parse()
-	switch{
-	case *fPort != "": 		port = *fPort
-	case *fUrl != "": 		urlProxy = *fUrl
-	case *fUser != "": 		username = *fUser
-	case *fPw != "": 		pw = *fPw
-	case *fSecret != "": 	secret = *fSecret
-	case *fPwHash != "": 	pwHash = *fPwHash
+
+	if *fPort != ""{
+		port = *fPort
 	}
+	if *fUrl != ""{
+		urlProxy = *fUrl
+	}
+	if *fUser != ""{
+		username = *fUser
+	}
+	if *fPw != ""{
+		pw = *fPw
+	}
+	if *fSecret != ""{
+		secret = *fSecret
+	}
+	if *fPwHash != ""{
+		pwHash = *fPwHash
+	}
+	if *fPath != ""{
+		filePath = *fPath
+	}
+	
 
 	// warnings using with defautl values:
 	if username=="username" {fmt.Println("!- using default username: ", username,"change with -user, or set using GRP_USER env")}

@@ -20,11 +20,10 @@ func main(){
 	// initialize and check our values we run the proxy with
 	InitGlobalValues()
 	InitAccounts()
-	const path = "/var/www/goAuthProxy/"
 
 	// multiplex our routes:
 	mux := http.NewServeMux()
-	mux.Handle("/login/", http.StripPrefix("/login/", http.FileServer(http.Dir("./public"))))
+	mux.Handle("/login/", http.StripPrefix("/login/", http.FileServer(http.Dir(filePath))))
 	mux.HandleFunc("/", handleRequestAndRedirect)
 	mux.HandleFunc("/api", handleLoginRequest)
 	mux.HandleFunc("/logout", handleLogoutRequest)
