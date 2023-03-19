@@ -1,7 +1,7 @@
 # Reverse Proxy with Login
-- minimal Example of a Reverse Proxy, written in go. Using JSON-Web-Token for Authorisation and a username/password for Authentification.
-- uses no Database, with a small RAM footprint
-- do not use in production
+-Example of a Reverse Proxy, written in go. Using JSON-Web-Token for Authorisation and a username/password-hash for Authentification.
+- uses no Database, with a small RAM footprint (3-4Mb)
+
 
 ## Setup using just a binary
 lets assume we want to build our own binary for our current system (assuming we have the go-compiler):
@@ -61,3 +61,12 @@ GRP_PASSWORD_HASH='$2a$10$3Th7F6Cd4rpEz8dIIh/dJO8gSnO5rKxis81OQ3ozEWYNLW7T7/MGe'
 GRP_SECRET='my-32-character-ultra-secure-and-ultra-long-secret'
 GRP_FILEPATH=/var/www/goAuthProxy
 ```
+
+## setup with docker run
+- sudo docker build -t go_auth_proxy .
+- about 8mb, so same size as binary
+- sudo docker run -it --rm -p 5555:5555 go_auth_proxy 
+- now we can access it in localhost:5555
+
+If we would want to expose it in our vps we could do so with--network="host"
+- sudo docker run -it --rm  --network="host" -p 5555:5555 go_auth_proxy
